@@ -1,0 +1,109 @@
+# This is the bootstrap for shell setup
+# it will probe the environment and then run the different sub scripts
+# This file should be sourced from your bashrc, zshrc.override ...
+
+uber_config=~/.config/uberconfig
+
+get_script_path() {
+    cd `dirname "$0"`
+    local _realdir=`readlink -f .`
+    echo ${_realdir}
+}
+
+check_config_directory() {
+    if ! [ -d "${uber_config}" ]; then
+        log_debug " - Cannot find config directory. Creating ${uber_config}"
+        mkdir -p "${uber_config}"
+    else
+        log_debug " - Found config directory in ${uber_config}"
+    fi
+}
+
+check_install() {
+    check_config_directory
+}
+
+
+get_current_os() {
+    echo `uname`
+}
+
+
+get_current_shell() {
+    echo `ps -p $$ |grep / | sed 's/.* //' | sed 's/.*\///'`
+}
+
+log_debug() {
+    if ! [ -z ${DEBUG} ]; then
+        echo "$*"        
+    fi
+}
+
+process_config_file() {
+    local config_file="$*"
+    log_debug "   - Sourcing '${config_file}'."
+    source "${config_file}"
+}
+
+process_directory() {
+    local _dir="$*"
+    if [ -r ${_dir}/exec_once.sh ]; then
+        if [ -r ${_dir}/exec_once.sh.done ]; then
+            log_debug " - ${_dir}/exec_once.sh skipped as already executed."
+        else
+            log_debug " - Executing ${_dir}/exec_once.sh"
+            ${_dir}/exec_once.sh
+            touch "${_dir}/exec_once.sh.done"
+        fi
+    fi
+
+    # Processing common files
+    log_debug " - Processing files in directory ${_dir}"
+    local nbfiles=`find "${_dir}/"  -maxdepth 1 -type f -iname '*.conf' | wc -l`
+    log_debug "   - Found ${nbfiles} config files."
+    if [ "$nbfiles" != "0" ]; then
+	local tmpfile=`mktemp`
+        find "${_dir}/"  -maxdepth 1 -type f -iname '*.conf' -print0 2> /dev/null > $tmpfile
+	for config_file in `cat $tmpfile`
+        do
+            process_config_file "${config_file}"
+        done
+	rm $tmpfile
+    fi
+
+    # Processing subfolders
+    if [ -d "${_dir}/${cur_os}" ]; then
+        process_directory  "${_dir}/${cur_os}"
+    else
+        log_debug " - No directory found ${_dir}/${cur_os}, skipping..."
+    fi
+    if [ -d "${_dir}/${cur_shell}" ]; then
+        process_directory  "${_dir}/${cur_shell}"
+    else
+        log_debug " - No directory found ${_dir}/${cur_shell}, skipping..."
+    fi
+}
+
+
+
+log_debug '--------------------------------------------------------------------------------'
+log_debug ' Starting environment setup'
+log_debug '--------------------------------------------------------------------------------'
+
+# echo dollar0: $0
+# echo called: $_
+uber_dir=$(get_script_path)
+check_install
+
+cur_os=$(get_current_os)
+cur_shell=$(get_current_shell)
+
+log_debug "OS detected                          : ${cur_os}"
+log_debug "Shell detected                       : ${cur_shell}"
+log_debug "Uberconfig installation directory is : ${uber_dir}"
+
+process_directory "${uber_config}"
+
+
+
+
