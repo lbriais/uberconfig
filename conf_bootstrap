@@ -1,11 +1,14 @@
-# This is the bootstrap for shell setup
-# it will probe the environment and then run the different sub scripts
+# bootstrap file for the shell setup process
+# it will probe the environment for os, shell type and then source
+# recursively config files from the $uber_config folder
+#
 # This file should be sourced from your bashrc, zshrc.override ...
 
+called=$_
 uber_config=~/.config/uberconfig
 
 get_script_path() {
-    cd `dirname "$0"`
+    cd `dirname "$called"`
     local _realdir=`readlink -f .`
     echo ${_realdir}
 }
@@ -95,8 +98,6 @@ log_debug '---------------------------------------------------------------------
 log_debug ' Starting environment setup'
 log_debug '--------------------------------------------------------------------------------'
 
-# echo dollar0: $0
-# echo called: $_
 uber_dir=$(get_script_path)
 check_install
 
@@ -106,8 +107,10 @@ cur_shell=$(get_current_shell)
 log_debug "OS detected                          : ${cur_os}"
 log_debug "Shell detected                       : ${cur_shell}"
 log_debug "Uberconfig installation directory is : ${uber_dir}"
+log_debug '--------------------------------------------------------------------------------'
 
 process_directory "${uber_config}"
+log_debug '--------------------------------------------------------------------------------'
 
 
 
