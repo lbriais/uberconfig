@@ -41,21 +41,26 @@ log_debug() {
 
 process_config_file() {
     local config_file="$*"
+
+    # Special case of scripts that have to be executed once only
+    if (echo ${config_file} |grep -ie 'exec[-_ ]once' 2>&1 >> /dev/null); then
+	if [ -r "${config_file}.done" ]; then
+	    log_debug "   - Skipping ${config_file}." 
+	else
+	    log_debug "   - Sourcing and locking '${config_file}'."
+	    source "${config_file}"
+	    touch "${config_file}.done"
+	fi
+	return
+    fi
+
+    # Source standard conf file
     log_debug "   - Sourcing '${config_file}'."
     source "${config_file}"
 }
 
 process_directory() {
     local _dir="$*"
-    if [ -r ${_dir}/exec_once.sh ]; then
-        if [ -r ${_dir}/exec_once.sh.done ]; then
-            log_debug " - ${_dir}/exec_once.sh skipped as already executed."
-        else
-            log_debug " - Executing ${_dir}/exec_once.sh"
-            ${_dir}/exec_once.sh
-            touch "${_dir}/exec_once.sh.done"
-        fi
-    fi
 
     # Processing common files
     log_debug " - Processing files in directory ${_dir}"
@@ -63,7 +68,7 @@ process_directory() {
     log_debug "   - Found ${nbfiles} config files."
     if [ "$nbfiles" != "0" ]; then
 	local tmpfile=`mktemp`
-        find "${_dir}/"  -maxdepth 1 -type f -iname '*.conf' -print0 2> /dev/null > $tmpfile
+        find "${_dir}/"  -maxdepth 1 -type f -iname '*.conf' 2> /dev/null > $tmpfile
 	for config_file in `cat $tmpfile`
         do
             process_config_file "${config_file}"
