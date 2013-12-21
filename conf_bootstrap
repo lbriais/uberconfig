@@ -4,21 +4,33 @@
 #
 # This file should be sourced from your bashrc, zshrc.override ...
 
-called=$_
-uber_config=~/.config/uberconfig
+# Saving some variales for later
+dollar_="$_"
+dollar0="$0"
+
+# echo "0 => ${dollar0} _ => ${dollar_}"
 
 get_script_path() {
-    cd `dirname "$called"`
+
+    # Default is working for zsh
+    local this_script_path=$dollar0
+    if [ "bash" = "${cur_shell}" ]; then
+	this_script_path="${BASH_SOURCE}"
+    fi
+    if [ "dash" = "${cur_shell}" ]; then
+	this_script_path="${DASH_SOURCE}"
+    fi
+    cd `dirname "${this_script_path}"`
     local _realdir=`readlink -f .`
     echo ${_realdir}
 }
 
 check_config_directory() {
     if ! [ -d "${uber_config}" ]; then
-        log_debug " - Cannot find config directory. Creating ${uber_config}"
+        log_debug " - Creating config directory: ${uber_config}"
         mkdir -p "${uber_config}"
     else
-        log_debug " - Found config directory in ${uber_config}"
+        log_debug " - Using config directory: ${uber_config}"
     fi
 }
 
@@ -33,7 +45,13 @@ get_current_os() {
 
 
 get_current_shell() {
-    echo `ps -p $$ |grep / | sed 's/.* //' | sed 's/.*\///'`
+    local this_shell=`ps -p $$ |grep / | sed 's/.* //' | sed 's/.*\///'`
+    # Handles the case of "sh"
+    if [ "sh" = "${this_shell}" ]; then
+	local sh_bin=`which sh`
+	this_shell=`readlink -f "${sh_bin}"|sed 's/^.*\/\([^\/]*\)$/\1/'`
+    fi
+    echo ${this_shell}
 }
 
 log_debug() {
@@ -51,7 +69,7 @@ process_config_file() {
 	    log_debug "   - Skipping ${config_file}." 
 	else
 	    log_debug "   - Sourcing and locking '${config_file}'."
-	    source "${config_file}"
+	    . "${config_file}"
 	    touch "${config_file}.done"
 	fi
 	return
@@ -59,13 +77,13 @@ process_config_file() {
 
     # Source standard conf file
     log_debug "   - Sourcing '${config_file}'."
-    source "${config_file}"
+    . "${config_file}"
 }
 
 process_directory() {
     local _dir="$*"
 
-    # Processing common files
+    # Processing directory files
     log_debug " - Processing files in directory ${_dir}"
     local nbfiles=`find "${_dir}/"  -maxdepth 1 -type f -iname '*.conf' | wc -l`
     log_debug "   - Found ${nbfiles} config files."
@@ -79,12 +97,13 @@ process_directory() {
 	rm $tmpfile
     fi
 
-    # Processing subfolders
+    # Processing sub directory matching current os name
     if [ -d "${_dir}/${cur_os}" ]; then
         process_directory  "${_dir}/${cur_os}"
     else
         log_debug " - No directory found ${_dir}/${cur_os}, skipping..."
     fi
+    # Processing sub directory matching current shell name
     if [ -d "${_dir}/${cur_shell}" ]; then
         process_directory  "${_dir}/${cur_shell}"
     else
@@ -98,18 +117,21 @@ log_debug '---------------------------------------------------------------------
 log_debug ' Starting environment setup'
 log_debug '--------------------------------------------------------------------------------'
 
-uber_dir=$(get_script_path)
-check_install
-
 cur_os=$(get_current_os)
 cur_shell=$(get_current_shell)
+uber_config=~/.config/uberconfig
+check_install
+# The following requires that cur_shell is already known
+uber_dir=$(get_script_path)
 
 log_debug "OS detected                          : ${cur_os}"
 log_debug "Shell detected                       : ${cur_shell}"
 log_debug "Uberconfig installation directory is : ${uber_dir}"
 log_debug '--------------------------------------------------------------------------------'
 
+# Here we go
 process_directory "${uber_config}"
+
 log_debug '--------------------------------------------------------------------------------'
 
 
