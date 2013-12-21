@@ -92,33 +92,41 @@ process_config_file() {
 }
 
 process_directory() {
-    local _dir="$*"
+    local current_directory="$*"
 
     # Processing directory files
-    log_debug " - Processing files in directory ${_dir}"
-    local nbfiles=`find "${_dir}/"  -maxdepth 1 -type f -iname '*.conf' | wc -l`
-    log_debug "   - Found ${nbfiles} config files."
-    if [ "$nbfiles" != "0" ]; then
-	local tmpfile=`mktemp`
-        find "${_dir}/"  -maxdepth 1 -type f -iname '*.conf' |sort 2> /dev/null > $tmpfile
-	for config_file in `cat $tmpfile`
+    log_debug " - Processing files in directory ${current_directory}"
+    local nbfiles=`find "${current_directory}" -maxdepth 1 -mindepth 1 -type f -iname '*.conf' | wc -l`
+    local nbdirs=`find "${current_directory}" -maxdepth 1 -mindepth 1 -type d -iname '*.conf' | wc -l`
+    log_debug "   - Found ${nbfiles} config files and ${nbdirs} directories."
+    if [ "$nbfiles" != "0" -o "$nbdirs" != "0" ]; then
+	local tmpfile=`mktemp --suffix .uc`
+        find "${current_directory}/" -maxdepth 1 -mindepth 1 -iname '*.conf' |sort 2> /dev/null > $tmpfile
+	# read -p "Paused in ${tmpfile}"
+ 	for entry in `cat $tmpfile`
         do
-            process_config_file "${config_file}"
+	    if [ -f "${entry}" ]; then
+		process_config_file "${entry}"
+	    else
+		process_directory "${entry}"
+	    fi
         done
 	rm $tmpfile
     fi
 
     # Processing sub directory matching current os name
-    if [ -d "${_dir}/${cur_os}" ]; then
-        process_directory  "${_dir}/${cur_os}"
+    if [ -d "${current_directory}/${cur_os}" ]; then
+        process_directory  "${current_directory}/${cur_os}"
     else
-        log_debug " - No directory found ${_dir}/${cur_os}, skipping..."
+	echo > /dev/null
+#        log_debug " - No directory found ${current_directory}/${cur_os}, skipping..."
     fi
     # Processing sub directory matching current shell name
-    if [ -d "${_dir}/${cur_shell}" ]; then
-        process_directory  "${_dir}/${cur_shell}"
+    if [ -d "${current_directory}/${cur_shell}" ]; then
+        process_directory  "${current_directory}/${cur_shell}"
     else
-        log_debug " - No directory found ${_dir}/${cur_shell}, skipping..."
+	echo > /dev/null
+#        log_debug " - No directory found ${current_directory}/${cur_shell}, skipping..."
     fi
 }
 
