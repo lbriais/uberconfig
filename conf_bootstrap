@@ -56,7 +56,7 @@ get_current_os() {
 
 
 get_current_shell() {
-    local this_shell=`ps -p $$ |grep / | sed 's/.* //' | sed 's/.*\///'`
+    local this_shell=`ps -p $$ |tail -n 1 | sed 's/.* //' | sed 's/.*\///'`
     # Handles the case of "sh"
     if [ "sh" = "${this_shell}" ]; then
 	local sh_bin=`which sh`
