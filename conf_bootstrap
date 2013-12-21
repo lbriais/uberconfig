@@ -7,7 +7,7 @@
 # Saving some variales for later
 dollar_="$_"
 dollar0="$0"
-
+candidate_path="$1"
 # echo "0 => ${dollar0} _ => ${dollar_}"
 
 get_script_path() {
@@ -24,6 +24,17 @@ get_script_path() {
     local _realdir=`readlink -f .`
     echo ${_realdir}
 }
+
+get_config_path() {
+    # Default path to the config
+    local config_path=~/.config/uberconfig
+    # The parameter passed to the script is only accepted is it is a real directory
+    if [ -d "${candidate_path}" ]; then
+	config_path="${candidate_path}"
+    fi
+    echo ${config_path}
+}
+
 
 check_config_directory() {
     if ! [ -d "${uber_config}" ]; then
@@ -119,8 +130,10 @@ log_debug '---------------------------------------------------------------------
 
 cur_os=$(get_current_os)
 cur_shell=$(get_current_shell)
-uber_config=~/.config/uberconfig
+uber_config=$(get_config_path)
+
 check_install
+
 # The following requires that cur_shell is already known
 uber_dir=$(get_script_path)
 
