@@ -10,6 +10,7 @@ dollar0="$0"
 candidate_path="$1"
 # echo "0 => ${dollar0} _ => ${dollar_}"
 
+
 get_script_path() {
 
     # Default is working for zsh
@@ -92,42 +93,55 @@ process_config_file() {
 }
 
 process_directory() {
-    local current_directory="$*"
+    local current_directory="$1"
+    local extension="$2"
 
     # Processing directory files
-    log_debug " - Processing files in directory ${current_directory}"
-    local nbfiles=`find "${current_directory}" -maxdepth 1 -mindepth 1 -type f -iname '*.conf' | wc -l`
-    local nbdirs=`find "${current_directory}" -maxdepth 1 -mindepth 1 -type d -iname '*.conf' | wc -l`
+    log_debug " - Processing entries matching *${extension} in directory ${current_directory}"
+    local nbfiles=`find "${current_directory}" -maxdepth 1 -mindepth 1 -type f -iname "*${extension}" | wc -l`
+    local nbdirs=`find "${current_directory}" -maxdepth 1 -mindepth 1 -type d -iname "*${extension}" | wc -l`
     log_debug "   - Found ${nbfiles} config files and ${nbdirs} directories."
     if [ "$nbfiles" != "0" -o "$nbdirs" != "0" ]; then
 	local tmpfile=`mktemp --suffix .uc`
-        find "${current_directory}/" -maxdepth 1 -mindepth 1 -iname '*.conf' |sort 2> /dev/null > $tmpfile
+        find "${current_directory}/" -maxdepth 1 -mindepth 1 -iname "*${extension}" |sort 2> /dev/null > $tmpfile
 	# read -p "Paused in ${tmpfile}"
  	for entry in `cat $tmpfile`
         do
 	    if [ -f "${entry}" ]; then
 		process_config_file "${entry}"
 	    else
-		process_directory "${entry}"
+		recurse_process_directory "${entry}"
 	    fi
         done
 	rm $tmpfile
     fi
+}
+
+
+
+recurse_process_directory() {
+    local current_directory="$*"
+
+    # Processing *.conf files
+    process_directory "${current_directory}" ".conf"
 
     # Processing sub directory matching current os name
     if [ -d "${current_directory}/${cur_os}" ]; then
-        process_directory  "${current_directory}/${cur_os}"
+        recurse_process_directory  "${current_directory}/${cur_os}"
     else
 	echo > /dev/null
-#        log_debug " - No directory found ${current_directory}/${cur_os}, skipping..."
+        # log_debug " - No directory found ${current_directory}/${cur_os}, skipping..."
     fi
     # Processing sub directory matching current shell name
     if [ -d "${current_directory}/${cur_shell}" ]; then
-        process_directory  "${current_directory}/${cur_shell}"
+        recurse_process_directory  "${current_directory}/${cur_shell}"
     else
 	echo > /dev/null
-#        log_debug " - No directory found ${current_directory}/${cur_shell}, skipping..."
+        # log_debug " - No directory found ${current_directory}/${cur_shell}, skipping..."
     fi
+
+    # Processing *.post_conf files
+    process_directory "${current_directory}" ".post_conf"
 }
 
 
@@ -151,7 +165,7 @@ log_debug "Uberconfig installation directory is : ${uber_dir}"
 log_debug '--------------------------------------------------------------------------------'
 
 # Here we go
-process_directory "${uber_config}"
+recurse_process_directory "${uber_config}"
 
 log_debug '--------------------------------------------------------------------------------'
 
