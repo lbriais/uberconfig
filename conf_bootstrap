@@ -4,7 +4,7 @@
 #
 # This file should be sourced from your bashrc, zshrc.override ...
 
-# Saving some variales for later
+# Saving some variables for later use
 dollar_="$_"
 dollar0="$0"
 candidate_path="$1"
@@ -24,6 +24,7 @@ get_script_path() {
     cd `dirname "${this_script_path}"`
     local _realdir=`readlink -f .`
     echo ${_realdir}
+    cd "${OLDPWD}"
 }
 
 get_config_path() {
@@ -98,8 +99,8 @@ process_directory() {
 
     # Processing directory files
     log_debug " - Processing entries matching *${extension} in directory ${current_directory}"
-    local nbfiles=`find "${current_directory}" -maxdepth 1 -mindepth 1 -type f -iname "*${extension}" | wc -l`
-    local nbdirs=`find "${current_directory}" -maxdepth 1 -mindepth 1 -type d -iname "*${extension}" | wc -l`
+    local nbfiles=`find "${current_directory}/" -maxdepth 1 -mindepth 1 -type f -iname "*${extension}" | wc -l`
+    local nbdirs=`find "${current_directory}/" -maxdepth 1 -mindepth 1 -type d -iname "*${extension}" | wc -l`
     log_debug "   - Found ${nbfiles} config files and ${nbdirs} directories."
     if [ "$nbfiles" != "0" -o "$nbdirs" != "0" ]; then
 	local tmpfile=`mktemp --suffix .uc`
@@ -120,21 +121,21 @@ process_directory() {
 
 
 recurse_process_directory() {
-    local current_directory="$*"
+    local current_directory="$1"
 
     # Processing *.conf files
     process_directory "${current_directory}" ".conf"
 
     # Processing sub directory matching current os name
     if [ -d "${current_directory}/${cur_os}" ]; then
-        recurse_process_directory  "${current_directory}/${cur_os}"
+        recurse_process_directory "${current_directory}/${cur_os}"
     else
 	echo > /dev/null
         # log_debug " - No directory found ${current_directory}/${cur_os}, skipping..."
     fi
     # Processing sub directory matching current shell name
     if [ -d "${current_directory}/${cur_shell}" ]; then
-        recurse_process_directory  "${current_directory}/${cur_shell}"
+        recurse_process_directory "${current_directory}/${cur_shell}"
     else
 	echo > /dev/null
         # log_debug " - No directory found ${current_directory}/${cur_shell}, skipping..."
