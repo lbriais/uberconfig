@@ -16,10 +16,10 @@ get_script_path() {
     # Default is working for zsh
     local this_script_path=$dollar0
     if [ "bash" = "${cur_shell}" ]; then
-				this_script_path="${BASH_SOURCE}"
+	this_script_path="${BASH_SOURCE}"
     fi
     if [ "dash" = "${cur_shell}" ]; then
-				this_script_path="${DASH_SOURCE}"
+	this_script_path="${DASH_SOURCE}"
     fi
     cd `dirname "${this_script_path}"`
     local _realdir=`readlink -f .`
@@ -32,7 +32,7 @@ get_config_path() {
     local config_path=~/.config/uberconfig
     # The parameter passed to the script is only accepted is it is a real directory
     if [ -d "${candidate_path}" ]; then
-				config_path="${candidate_path}"
+	config_path="${candidate_path}"
     fi
     echo ${config_path}
 }
@@ -61,8 +61,8 @@ get_current_shell() {
     local this_shell=`ps -p $$ |tail -n 1 | sed 's/.* //' | sed 's/.*\///'`
     # Handles the case of "sh"
     if [ "sh" = "${this_shell}" ]; then
-				local sh_bin=`which sh`
-				this_shell=`readlink -f "${sh_bin}"|sed 's/^.*\/\([^\/]*\)$/\1/'`
+	local sh_bin=`which sh`
+	this_shell=`readlink -f "${sh_bin}"|sed 's/^.*\/\([^\/]*\)$/\1/'`
     fi
     echo ${this_shell}
 }
@@ -78,14 +78,14 @@ process_config_file() {
 
     # Special case of scripts that have to be executed once only
     if (echo ${config_file} |grep -ie 'exec[-_ ]once[^\/]*$' 2>&1 >> /dev/null); then
-				if [ -r "${config_file}.done" ]; then
-						log_debug "   - Skipping ${config_file}." 
-				else
-						log_debug "   - Sourcing and locking '${config_file}'."
-						. "${config_file}"
-						touch "${config_file}.done"
-				fi
-				return
+	if [ -r "${config_file}.done" ]; then
+	    log_debug "   - Skipping ${config_file}." 
+	else
+	    log_debug "   - Sourcing and locking '${config_file}'."
+	    . "${config_file}"
+	    touch "${config_file}.done"
+	fi
+	return
     fi
 
     # Source standard conf file
@@ -103,27 +103,27 @@ process_directory() {
     local nbdirs=`find "${current_directory}/" -maxdepth 1 -mindepth 1 -type d -iname "*${extension}" | wc -l`
     log_debug "   - Found ${nbfiles} config files and ${nbdirs} directories."
     if [ "$nbfiles" != "0" -o "$nbdirs" != "0" ]; then
-				local tmpfile=`mktemp`
+	local tmpfile=`mktemp`
         find "${current_directory}/" -maxdepth 1 -mindepth 1 -iname "*${extension}" |sort 2> /dev/null > $tmpfile
 	# read -p "Paused in ${tmpfile}"
-				for entry in `cat $tmpfile`
-					do
-					if [ -f "${entry}" ]; then
-							process_config_file "${entry}"
-					else
+	for entry in `cat $tmpfile`
+	do
+	    if [ -f "${entry}" ]; then
+		process_config_file "${entry}"
+	    else
 
-							if [ -r "${entry}.done" ]; then
-									log_debug " - Skipping directory: ${entry}." 
-							else
-									if (echo ${entry} |grep -ie 'exec[-_ ]once' 2>&1 >> /dev/null); then
-											log_debug " - Locking directory: ${entry}."
-											touch "${entry}.done"
-									fi
-									recurse_process_directory "${entry}"
-							fi
-					fi
+		if [ -r "${entry}.done" ]; then
+		    log_debug " - Skipping directory: ${entry}." 
+		else
+		    if (echo ${entry} |grep -ie 'exec[-_ ]once' 2>&1 >> /dev/null); then
+			log_debug " - Locking directory: ${entry}."
+			touch "${entry}.done"
+		    fi
+		    recurse_process_directory "${entry}"
+		fi
+	    fi
         done
-				rm $tmpfile
+	rm $tmpfile
     fi
 }
 
@@ -139,14 +139,14 @@ recurse_process_directory() {
     if [ -d "${current_directory}/${cur_os}" ]; then
         recurse_process_directory "${current_directory}/${cur_os}"
     else
-				echo > /dev/null
+	echo > /dev/null
         # log_debug " - No directory found ${current_directory}/${cur_os}, skipping..."
     fi
     # Processing sub directory matching current shell name
     if [ -d "${current_directory}/${cur_shell}" ]; then
         recurse_process_directory "${current_directory}/${cur_shell}"
     else
-				echo > /dev/null
+	echo > /dev/null
         # log_debug " - No directory found ${current_directory}/${cur_shell}, skipping..."
     fi
 
