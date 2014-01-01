@@ -40,10 +40,10 @@ get_config_path() {
 
 check_config_directory() {
     if ! [ -d "${uber_config}" ]; then
-        log_debug " - Creating config directory: ${uber_config}"
+        __display_debug_info " - Creating config directory: ${uber_config}"
         mkdir -p "${uber_config}"
     else
-        log_debug " - Using config directory: ${uber_config}"
+        __display_debug_info " - Using config directory: ${uber_config}"
     fi
 }
 
@@ -67,8 +67,8 @@ get_current_shell() {
     echo ${this_shell}
 }
 
-log_debug() {
-    if ! [ -z ${DEBUG} ]; then
+__display_debug_info() {
+    if ! [ -z ${DEBUG_CONF_BOOTSTRAP} ]; then
         echo "$*"        
     fi
 }
@@ -79,9 +79,9 @@ process_config_file() {
     # Special case of scripts that have to be executed once only
     if (echo ${config_file} |grep -ie 'exec[-_ ]once[^\/]*$' 2>&1 >> /dev/null); then
 	if [ -r "${config_file}.done" ]; then
-	    log_debug "   - Skipping ${config_file}." 
+	    __display_debug_info "   - Skipping ${config_file}." 
 	else
-	    log_debug "   - Sourcing and locking '${config_file}'."
+	    __display_debug_info "   - Sourcing and locking '${config_file}'."
 	    . "${config_file}"
 	    touch "${config_file}.done"
 	fi
@@ -89,7 +89,7 @@ process_config_file() {
     fi
 
     # Source standard conf file
-    log_debug "   - Sourcing '${config_file}'."
+    __display_debug_info "   - Sourcing '${config_file}'."
     . "${config_file}"
 }
 
@@ -98,10 +98,10 @@ process_directory() {
     local extension="$2"
 
     # Processing directory files
-    log_debug " - Processing entries matching *${extension} in directory ${current_directory}"
+    __display_debug_info " - Processing entries matching *${extension} in directory ${current_directory}"
     local nbfiles=`find "${current_directory}/" -maxdepth 1 -mindepth 1 -type f -iname "*${extension}" | wc -l`
     local nbdirs=`find "${current_directory}/" -maxdepth 1 -mindepth 1 -type d -iname "*${extension}" | wc -l`
-    log_debug "   - Found ${nbfiles} config files and ${nbdirs} directories."
+    __display_debug_info "   - Found ${nbfiles} config files and ${nbdirs} directories."
     if [ "$nbfiles" != "0" -o "$nbdirs" != "0" ]; then
 	local tmpfile=`mktemp`
         find "${current_directory}/" -maxdepth 1 -mindepth 1 -iname "*${extension}" |sort 2> /dev/null > $tmpfile
@@ -113,10 +113,10 @@ process_directory() {
 	    else
 
 		if [ -r "${entry}.done" ]; then
-		    log_debug " - Skipping directory: ${entry}." 
+		    __display_debug_info " - Skipping directory: ${entry}." 
 		else
 		    if (echo ${entry} |grep -ie 'exec[-_ ]once' 2>&1 >> /dev/null); then
-			log_debug " - Locking directory: ${entry}."
+			__display_debug_info " - Locking directory: ${entry}."
 			touch "${entry}.done"
 		    fi
 		    recurse_process_directory "${entry}"
@@ -140,14 +140,14 @@ recurse_process_directory() {
         recurse_process_directory "${current_directory}/${cur_os}"
     else
 	echo > /dev/null
-        # log_debug " - No directory found ${current_directory}/${cur_os}, skipping..."
+        # __display_debug_info " - No directory found ${current_directory}/${cur_os}, skipping..."
     fi
     # Processing sub directory matching current shell name
     if [ -d "${current_directory}/${cur_shell}" ]; then
         recurse_process_directory "${current_directory}/${cur_shell}"
     else
 	echo > /dev/null
-        # log_debug " - No directory found ${current_directory}/${cur_shell}, skipping..."
+        # __display_debug_info " - No directory found ${current_directory}/${cur_shell}, skipping..."
     fi
 
     # Processing *.post_conf files
@@ -156,9 +156,9 @@ recurse_process_directory() {
 
 
 
-log_debug '--------------------------------------------------------------------------------'
-log_debug ' Starting environment setup'
-log_debug '--------------------------------------------------------------------------------'
+__display_debug_info '--------------------------------------------------------------------------------'
+__display_debug_info ' Starting environment setup'
+__display_debug_info '--------------------------------------------------------------------------------'
 
 cur_os=$(get_current_os)
 cur_shell=$(get_current_shell)
@@ -169,15 +169,15 @@ check_install
 # The following requires that cur_shell is already known
 uber_dir=$(get_script_path)
 
-log_debug "OS detected                          : ${cur_os}"
-log_debug "Shell detected                       : ${cur_shell}"
-log_debug "Uberconfig installation directory is : ${uber_dir}"
-log_debug '--------------------------------------------------------------------------------'
+__display_debug_info "OS detected                          : ${cur_os}"
+__display_debug_info "Shell detected                       : ${cur_shell}"
+__display_debug_info "Uberconfig installation directory is : ${uber_dir}"
+__display_debug_info '--------------------------------------------------------------------------------'
 
 # Here we go
 recurse_process_directory "${uber_config}"
 
-log_debug '--------------------------------------------------------------------------------'
+__display_debug_info '--------------------------------------------------------------------------------'
 
 
 
