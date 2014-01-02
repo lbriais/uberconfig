@@ -69,7 +69,7 @@ get_current_shell() {
 
 __display_debug_info() {
     if ! [ -z ${DEBUG_CONF_BOOTSTRAP} ]; then
-        echo "$*"        
+        echo "$@"
     fi
 }
 
@@ -155,30 +155,38 @@ recurse_process_directory() {
 }
 
 
+reload_shell_conf() {
+    __display_debug_info '--------------------------------------------------------------------------------'
+    __display_debug_info ' Starting environment setup'
+    __display_debug_info '--------------------------------------------------------------------------------'
 
-__display_debug_info '--------------------------------------------------------------------------------'
-__display_debug_info ' Starting environment setup'
-__display_debug_info '--------------------------------------------------------------------------------'
+    cur_os=$(get_current_os)
+    cur_shell=$(get_current_shell)
+    uber_config=$(get_config_path)
 
-cur_os=$(get_current_os)
-cur_shell=$(get_current_shell)
-uber_config=$(get_config_path)
+    check_install
 
-check_install
+    # The following requires cur_shell to be already known
+    uber_dir=$(get_script_path)
 
-# The following requires that cur_shell is already known
-uber_dir=$(get_script_path)
+    __display_debug_info "OS detected                          : ${cur_os}"
+    __display_debug_info "Shell detected                       : ${cur_shell}"
+    __display_debug_info "Uberconfig installation directory is : ${uber_dir}"
+    __display_debug_info '--------------------------------------------------------------------------------'
 
-__display_debug_info "OS detected                          : ${cur_os}"
-__display_debug_info "Shell detected                       : ${cur_shell}"
-__display_debug_info "Uberconfig installation directory is : ${uber_dir}"
-__display_debug_info '--------------------------------------------------------------------------------'
+    recurse_process_directory "${uber_config}"
+
+    __display_debug_info '--------------------------------------------------------------------------------'
+
+}
 
 # Here we go
-recurse_process_directory "${uber_config}"
-
-__display_debug_info '--------------------------------------------------------------------------------'
-
-
+case $- in
+  *i*)
+	reload_shell_conf
+	;;
+  *)
+	;;
+esac
 
 
