@@ -133,7 +133,7 @@ recurse_process_directory() {
     local current_directory="$1"
 
     # Processing *.conf files
-    process_directory "${current_directory}" ".conf"
+    process_directory "${current_directory}" ".conf.sh"
 
     # Processing sub directory matching current os name
     if [ -d "${current_directory}/${cur_os}" ]; then
@@ -151,7 +151,7 @@ recurse_process_directory() {
     fi
 
     # Processing *.post_conf files
-    process_directory "${current_directory}" ".post_conf"
+    process_directory "${current_directory}" ".post_conf.sh"
 }
 
 
